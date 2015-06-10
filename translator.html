@@ -1,0 +1,380 @@
+<html>
+
+<head>
+    <style type="text/css">
+        ul,li,tr,th,td {
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+        
+        tr:nth-child(2n+1) {
+            background-color: #efefef;
+        }
+        
+        ul li {
+            list-style: none;
+            display: inline-block;
+            float: left;
+            padding: 8px;
+            border: 1px solid #ccc;
+        }
+        
+        ul.lang_select li:hover {
+            background-color: #efefef;
+            cursor: pointer;
+        }
+        
+        ul.lang_select li.selected {
+            background-color: #efefef;
+        }
+        
+        ul.lang_select {
+            margin-top: 10px;
+        }
+        
+        ul.lang_select li:hover {
+            background-color: #efefef;
+        }
+        
+        .clear {
+            clear: both;
+        }
+        
+        #fileInput {
+            width: 100%;
+        }
+        
+        .lang_load {
+            position: relative;
+            height: 400px;
+        }
+        
+        .lang_load textarea {
+            width: 800px;
+            height: 400px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .lang_load textarea.selected {
+            z-index: 9000;
+        }
+        
+        .miss {
+            background-color: #FFB5B5!important;
+        }
+    </style>
+
+    <script type="text/javascript" src="jszip.min.js"></script>
+
+    <script type="text/javascript">
+        if (!String.prototype.includes) {
+            String.prototype.includes = function() {
+                return String.prototype.indexOf.apply(this, arguments) !== -1;
+            };
+        }
+
+        if (!Array.prototype.foreach) {
+            Array.prototype.foreach = function(callback) {
+                for (var i = 0; i < this.length; i++) {
+                    callback(this[i]);
+                }
+            }
+        }
+
+        if (!FileList.prototype.foreach) {
+            FileList.prototype.foreach = function(callback) {
+                for (var i = 0; i < this.length; i++) {
+                    callback(this[i]);
+                }
+            }
+        }
+
+        if (!HTMLElement.prototype.addClass) {
+            HTMLElement.prototype.addClass = function(className) {
+                if (!this.className.includes(className)) {
+                    this.className = this.className + className;
+                }
+            }
+        }
+        if (!HTMLElement.prototype.removeClass) {
+            HTMLElement.prototype.removeClass = function(className) {
+                if (this.className.includes(className)) {
+                    this.className = this.className.replace(className, "");
+                }
+            }
+        }
+        if (!HTMLElement.prototype.clear) {
+            HTMLElement.prototype.clear = function() {
+                while (this.firstChild) {
+                    this.removeChild(this.firstChild);
+                }
+            }
+        }
+
+        if (!HTMLCollection.prototype.foreach) {
+            HTMLCollection.prototype.foreach = function(callback) {
+                for (var i = 0; i < this.length; i++) {
+                    callback(this[i]);
+                }
+            }
+        }
+
+        function getTextArea(lang) {
+            var result;
+            document.getElementsByTagName('textarea').foreach(function(e) {
+                if (e.className.includes(lang))
+                    result = e;
+            });
+            return result;
+        }
+
+        function loadLang(lang, result) {
+            getTextArea(lang).innerHTML = result;
+        }
+
+        function getLang(lang) {
+            return getTextArea(lang).innerHTML;
+        }
+
+        function detectLang(fileName) {
+            var result = "en";
+            supportLang.foreach(function(lang) {
+                if (fileName.includes("_" + lang)) result = lang;
+            });
+            return result;
+        }
+
+        var selectedLang = "en";
+        var selected = " selected";
+        var supportLang = ["en", "da", "fr", "sv", "nb", "nl"];
+        var supportExt = "properties";
+
+        function switchLang(e) {
+            toggleSelected(false);
+            selectedLang = e.className;
+            toggleSelected(true);
+        }
+
+        function toggleSelected(toggleOn) {
+            var objs = document.getElementsByClassName(selectedLang).foreach(function(obj) {
+                if (toggleOn) obj.addClass(selected);
+                else obj.removeClass(selected);
+            });
+        }
+
+        var allLangMap = [];
+
+        function indexOf(key) {
+            for (var i = 0; i < allLangMap.length; i++) {
+                if (allLangMap[i].key == key) return i;
+            };
+            return -1;
+        }
+
+        function push(key, value, lang) {
+            var index = indexOf(key);
+            if (index >= 0) {
+                allLangMap[index][lang] = value;
+            } else {
+                var m = {};
+                m.key = key;
+                m[lang] = value;
+                allLangMap.push(m);
+            }
+        }
+
+        function parser(lang) {
+            var content = getLang(lang);
+            var lines = content.split("\n");
+            lines.foreach(function(line) {
+                var str = line.trim();
+                if (!str || str.indexOf("#") === 0) return;
+                var res = str.split("=");
+                push(res[0], res[1], lang);
+            });
+        }
+
+        function parseAll() {
+            allLangMap = [];
+            supportLang.foreach(function(lang) {
+                parser(lang);
+            });
+            printResult2();
+        }
+
+        function isUndef(value) {
+            return (typeof(value) === "undefined") || (value === null) || value == "";
+        }
+
+        function getLangEle(value) {
+            return isUndef(value) ? "" : value;
+        }
+
+        function createTag(tagName, value, style) {
+            var result = document.createElement(tagName);
+            result.innerHTML = getLangEle(value);
+            if (!isUndef(style)) {
+                result.className = getLangEle(style);
+            }
+            return result;
+        }
+
+        function getCols() {
+            var cols = ["key"];
+            supportLang.foreach(function(lang) {
+                cols.push(lang);
+            });
+            return cols;
+        }
+
+        //refactor to object
+        function isMiss(m) {
+            var miss = !m.key;
+            supportLang.foreach(function(lang) {
+                miss = miss || isUndef(m[lang]);
+            });
+            return miss;
+        }
+
+        function makeHeader(table) {
+            var row = createTag("tr");
+            getCols().foreach(function(value) {
+                var col = createTag("th", value);
+                row.appendChild(col);
+            });
+            table.appendChild(row);
+            return table;
+        }
+
+        function makeContent(table) {
+            allLangMap.foreach(function(m) {
+                var style = isMiss(m) ? "miss" : "";
+                var row = createTag("tr", "", style);
+                getCols().foreach(function(value) {
+                    var col = createTag("td", m[value]);
+                    col.setAttribute("contenteditable", "true");
+                    col.addEventListener("input", function() {
+                        m[value] = col.innerHTML;
+                        if (isMiss(m)) row.addClass("miss");
+                        else row.removeClass("miss");
+                    }, false);
+                    row.appendChild(col);
+                });
+                table.appendChild(row);
+            });
+            return table;
+        }
+
+        function printResult2() {
+            var result = document.getElementById("result");
+            result.clear();
+            var table = createTag("table");
+            table = makeHeader(table);
+            table = makeContent(table);
+            result.appendChild(table);
+        }
+
+        function printResult() {
+            var result = "<table>" + "<col width='80'>";
+            supportLang.foreach(function(lang) {
+                result += "<col width='80'>";
+            });
+            result += "<tr>" + "<th>key</th>";
+            supportLang.foreach(function(lang) {
+                result += "<th>" + lang + "</th>";
+            }); + "</tr>";
+            for (var i = 0; i < allLangMap.length; i++) {
+                var m = allLangMap[i];
+                var miss = !m.key;
+                supportLang.foreach(function(lang) {
+                    miss = miss || isUndef(m[lang]);
+                });
+                var style = miss ? "class='miss'" : "";
+                result += "<tr " + style + ">";
+                result += "<td>" + m.key + "</td>";
+                supportLang.foreach(function(lang) {
+                    result += "<td contenteditable='true'>" + getLangEle(m[lang]) + "</td>";
+                });
+                result += "</tr>";
+            }
+            result += "</table>";
+            document.getElementById("result").innerHTML = result;
+            return false;
+        }
+
+        function getLangResult(lang) {
+            var result = "";
+            allLangMap.foreach(function(m) {
+                if (!isUndef(m[lang])) {
+                    result += m.key + "=" + m[lang] + "\n";
+                }
+            });
+            return result;
+        }
+
+        function generateZip(e) {
+            alert("run here");
+            var zip = new JSZip();
+            var folder = zip.folder("I18N");
+            supportLang.foreach(function(lang) {
+                var result = "" + getLangResult(lang);
+                folder.file(lang + ".properties", result);
+            });
+            content = zip.generate();
+            //location.href = "data:application/zip;base64," + content;
+            e.setAttribute("download", "I18N.zip");
+            e.setAttribute("href","data:application/zip;base64," + content);
+        }
+
+        window.onload = function() {
+            var fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', function(e) {
+                fileInput.files.foreach(function(file) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        loadLang(detectLang(file.name), reader.result);
+                    }
+                    reader.readAsText(file);
+                });
+            });
+        }
+    </script>
+</head>
+
+<body>
+    Select files :
+    <input type="file" id="fileInput" multiple/>
+    </br>
+
+    <div class="tab-panel">
+        <ul class="lang_select">
+            <li class="en selected" onclick="switchLang(this);">en</li>
+            <li class="da" onclick="switchLang(this);">da</li>
+            <li class="fr" onclick="switchLang(this);">fr</li>
+            <li class="nb" onclick="switchLang(this);">nb</li>
+            <li class="nl" onclick="switchLang(this);">nl</li>
+            <li class="sv" onclick="switchLang(this);">sv</li>
+        </ul>
+        <div class="clear"></div>
+        <div class="lang_load">
+            <textarea class="en selected">en</textarea>
+            <textarea class="da">da</textarea>
+            <textarea class="fr">fr</textarea>
+            <textarea class="nb">nb</textarea>
+            <textarea class="nl">nl</textarea>
+            <textarea class="sv">sv</textarea>
+        </div>
+        <div class="clear"></div>
+    </div>
+    <input type="button" value="parse" onclick="parseAll();" />
+    
+    <a onclick="generateZip(this);"> download </a>
+    <div id="fileName"></div>
+    <div id="result">
+    </div>
+</body>
+
+</html>
