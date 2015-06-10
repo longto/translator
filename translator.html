@@ -1,126 +1,13 @@
 <html>
 
 <head>
-    <style type="text/css">
-        ul,li,tr,th,td {
-            padding: 0;
-            margin: 0;
-            text-align: left;
-        }
-        
-        tr:nth-child(2n+1) {
-            background-color: #efefef;
-        }
-        
-        ul li {
-            list-style: none;
-            display: inline-block;
-            float: left;
-            padding: 8px;
-            border: 1px solid #ccc;
-        }
-        
-        ul.lang_select li:hover {
-            background-color: #efefef;
-            cursor: pointer;
-        }
-        
-        ul.lang_select li.selected {
-            background-color: #efefef;
-        }
-        
-        ul.lang_select {
-            margin-top: 10px;
-        }
-        
-        ul.lang_select li:hover {
-            background-color: #efefef;
-        }
-        
-        .clear {
-            clear: both;
-        }
-        
-        #fileInput {
-            width: 100%;
-        }
-        
-        .lang_load {
-            position: relative;
-            height: 400px;
-        }
-        
-        .lang_load textarea {
-            width: 800px;
-            height: 400px;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        
-        .lang_load textarea.selected {
-            z-index: 9000;
-        }
-        
-        .miss {
-            background-color: #FFB5B5!important;
-        }
-    </style>
+
+	<link rel="stylesheet" type="text/css" href="style.css">
 
     <script type="text/javascript" src="jszip.min.js"></script>
+    <script type="text/javascript" src="polyfill.js"></script>
 
     <script type="text/javascript">
-        if (!String.prototype.includes) {
-            String.prototype.includes = function() {
-                return String.prototype.indexOf.apply(this, arguments) !== -1;
-            };
-        }
-
-        if (!Array.prototype.foreach) {
-            Array.prototype.foreach = function(callback) {
-                for (var i = 0; i < this.length; i++) {
-                    callback(this[i]);
-                }
-            }
-        }
-
-        if (!FileList.prototype.foreach) {
-            FileList.prototype.foreach = function(callback) {
-                for (var i = 0; i < this.length; i++) {
-                    callback(this[i]);
-                }
-            }
-        }
-
-        if (!HTMLElement.prototype.addClass) {
-            HTMLElement.prototype.addClass = function(className) {
-                if (!this.className.includes(className)) {
-                    this.className = this.className + className;
-                }
-            }
-        }
-        if (!HTMLElement.prototype.removeClass) {
-            HTMLElement.prototype.removeClass = function(className) {
-                if (this.className.includes(className)) {
-                    this.className = this.className.replace(className, "");
-                }
-            }
-        }
-        if (!HTMLElement.prototype.clear) {
-            HTMLElement.prototype.clear = function() {
-                while (this.firstChild) {
-                    this.removeChild(this.firstChild);
-                }
-            }
-        }
-
-        if (!HTMLCollection.prototype.foreach) {
-            HTMLCollection.prototype.foreach = function(callback) {
-                for (var i = 0; i < this.length; i++) {
-                    callback(this[i]);
-                }
-            }
-        }
 
         function getTextArea(lang) {
             var result;
@@ -189,6 +76,16 @@
         function parser(lang) {
             var content = getLang(lang);
             var lines = content.split("\n");
+            lines.foreach(function(line) {
+                var str = line.trim();
+                if (!str || str.indexOf("#") === 0) return;
+                var res = str.split("=");
+                push(res[0], res[1], lang);
+            });
+        }
+
+        function parse2(lang,content) {
+        	var lines = content.split("\n");
             lines.foreach(function(line) {
                 var str = line.trim();
                 if (!str || str.indexOf("#") === 0) return;
@@ -277,34 +174,6 @@
             result.appendChild(table);
         }
 
-        function printResult() {
-            var result = "<table>" + "<col width='80'>";
-            supportLang.foreach(function(lang) {
-                result += "<col width='80'>";
-            });
-            result += "<tr>" + "<th>key</th>";
-            supportLang.foreach(function(lang) {
-                result += "<th>" + lang + "</th>";
-            }); + "</tr>";
-            for (var i = 0; i < allLangMap.length; i++) {
-                var m = allLangMap[i];
-                var miss = !m.key;
-                supportLang.foreach(function(lang) {
-                    miss = miss || isUndef(m[lang]);
-                });
-                var style = miss ? "class='miss'" : "";
-                result += "<tr " + style + ">";
-                result += "<td>" + m.key + "</td>";
-                supportLang.foreach(function(lang) {
-                    result += "<td contenteditable='true'>" + getLangEle(m[lang]) + "</td>";
-                });
-                result += "</tr>";
-            }
-            result += "</table>";
-            document.getElementById("result").innerHTML = result;
-            return false;
-        }
-
         function getLangResult(lang) {
             var result = "";
             allLangMap.foreach(function(m) {
@@ -316,7 +185,6 @@
         }
 
         function generateZip(e) {
-            alert("run here");
             var zip = new JSZip();
             var folder = zip.folder("I18N");
             supportLang.foreach(function(lang) {
@@ -324,7 +192,7 @@
                 folder.file(lang + ".properties", result);
             });
             content = zip.generate();
-            //location.href = "data:application/zip;base64," + content;
+            //location.href = "data:application/zip;base64," + content;//for button
             e.setAttribute("download", "I18N.zip");
             e.setAttribute("href","data:application/zip;base64," + content);
         }
@@ -332,15 +200,22 @@
         window.onload = function() {
             var fileInput = document.getElementById('fileInput');
             fileInput.addEventListener('change', function(e) {
+            	allLangMap = []; //reset all lang
                 fileInput.files.foreach(function(file) {
                     var reader = new FileReader();
                     reader.onload = function(e) {
-                        loadLang(detectLang(file.name), reader.result);
+                    	var lang = detectLang(file.name);
+                    	var content = reader.result;  
+                        loadLang(lang, content);
+						parse2(lang, content);
+						printResult2();
                     }
                     reader.readAsText(file);
                 });
+
             });
         }
+
     </script>
 </head>
 

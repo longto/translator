@@ -1,0 +1,63 @@
+ul,li,tr,th,td {
+    padding: 0;
+    margin: 0;
+    text-align: left;
+}
+
+tr:nth-child(2n+1) {
+    background-color: #efefef;
+}
+
+ul li {
+    list-style: none;
+    display: inline-block;
+    float: left;
+    padding: 8px;
+    border: 1px solid #ccc;
+}
+
+ul.lang_select li:hover {
+    background-color: #efefef;
+    cursor: pointer;
+}
+
+ul.lang_select li.selected {
+    background-color: #efefef;
+}
+
+ul.lang_select {
+    margin-top: 10px;
+}
+
+ul.lang_select li:hover {
+    background-color: #efefef;
+}
+
+.clear {
+    clear: both;
+}
+
+#fileInput {
+    width: 100%;
+}
+
+.lang_load {
+    position: relative;
+    height: 400px;
+}
+
+.lang_load textarea {
+    width: 800px;
+    height: 400px;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.lang_load textarea.selected {
+    z-index: 9000;
+}
+
+.miss {
+    background-color: #FFB5B5!important;
+}
