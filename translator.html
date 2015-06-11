@@ -6,7 +6,8 @@
 
     <script type="text/javascript" src="jszip.min.js"></script>
     <script type="text/javascript" src="polyfill.js"></script>
-
+	<script type="text/javascript" src="models.js"></script>
+	<script type="text/javascript" src="table.js"></script>
     <script type="text/javascript">
 
         function getTextArea(lang) {
@@ -26,6 +27,7 @@
             return getTextArea(lang).innerHTML;
         }
 
+        supportLang = [ "en", "da", "fr", "sv", "nb", "nl" ];
         function detectLang(fileName) {
             var result = "en";
             supportLang.foreach(function(lang) {
@@ -34,11 +36,7 @@
             return result;
         }
 
-        var selectedLang = "en";
-        var selected = " selected";
-        var supportLang = ["en", "da", "fr", "sv", "nb", "nl"];
-        var supportExt = "properties";
-
+       
         function switchLang(e) {
             toggleSelected(false);
             selectedLang = e.className;
@@ -52,152 +50,19 @@
             });
         }
 
-        var allLangMap = [];
-
-        function indexOf(key) {
-            for (var i = 0; i < allLangMap.length; i++) {
-                if (allLangMap[i].key == key) return i;
-            };
-            return -1;
-        }
-
-        function push(key, value, lang) {
-            var index = indexOf(key);
-            if (index >= 0) {
-                allLangMap[index][lang] = value;
-            } else {
-                var m = {};
-                m.key = key;
-                m[lang] = value;
-                allLangMap.push(m);
-            }
-        }
-
-        function parser(lang) {
-            var content = getLang(lang);
-            var lines = content.split("\n");
-            lines.foreach(function(line) {
-                var str = line.trim();
-                if (!str || str.indexOf("#") === 0) return;
-                var res = str.split("=");
-                push(res[0], res[1], lang);
-            });
-        }
-
-        function parse2(lang,content) {
-        	var lines = content.split("\n");
-            lines.foreach(function(line) {
-                var str = line.trim();
-                if (!str || str.indexOf("#") === 0) return;
-                var res = str.split("=");
-                push(res[0], res[1], lang);
-            });
-        }
-
-        function parseAll() {
-            allLangMap = [];
-            supportLang.foreach(function(lang) {
-                parser(lang);
-            });
-            printResult2();
-        }
-
-        function isUndef(value) {
-            return (typeof(value) === "undefined") || (value === null) || value == "";
-        }
-
-        function getLangEle(value) {
-            return isUndef(value) ? "" : value;
-        }
-
-        function createTag(tagName, value, style) {
-            var result = document.createElement(tagName);
-            result.innerHTML = getLangEle(value);
-            if (!isUndef(style)) {
-                result.className = getLangEle(style);
-            }
-            return result;
-        }
-
-        function getCols() {
-            var cols = ["key"];
-            supportLang.foreach(function(lang) {
-                cols.push(lang);
-            });
-            return cols;
-        }
-
-        //refactor to object
-        function isMiss(m) {
-            var miss = !m.key;
-            supportLang.foreach(function(lang) {
-                miss = miss || isUndef(m[lang]);
-            });
-            return miss;
-        }
-
-        function makeHeader(table) {
-            var row = createTag("tr");
-            getCols().foreach(function(value) {
-                var col = createTag("th", value);
-                row.appendChild(col);
-            });
-            table.appendChild(row);
-            return table;
-        }
-
-        function makeContent(table) {
-            allLangMap.foreach(function(m) {
-                var style = isMiss(m) ? "miss" : "";
-                var row = createTag("tr", "", style);
-                getCols().foreach(function(value) {
-                    var col = createTag("td", m[value]);
-                    col.setAttribute("contenteditable", "true");
-                    col.addEventListener("input", function() {
-                        m[value] = col.innerHTML;
-                        if (isMiss(m)) row.addClass("miss");
-                        else row.removeClass("miss");
-                    }, false);
-                    row.appendChild(col);
-                });
-                table.appendChild(row);
-            });
-            return table;
-        }
-
-        function printResult2() {
-            var result = document.getElementById("result");
-            result.clear();
-            var table = createTag("table");
-            table = makeHeader(table);
-            table = makeContent(table);
-            result.appendChild(table);
-        }
-
-        function getLangResult(lang) {
-            var result = "";
-            allLangMap.foreach(function(m) {
-                if (!isUndef(m[lang])) {
-                    result += m.key + "=" + m[lang] + "\n";
-                }
-            });
-            return result;
-        }
-
         function generateZip(e) {
-            var zip = new JSZip();
-            var folder = zip.folder("I18N");
-            supportLang.foreach(function(lang) {
-                var result = "" + getLangResult(lang);
-                folder.file(lang + ".properties", result);
-            });
-            content = zip.generate();
+            content = __translator.generateZip();
             //location.href = "data:application/zip;base64," + content;//for button
             e.setAttribute("download", "I18N.zip");
             e.setAttribute("href","data:application/zip;base64," + content);
         }
-
+        
+        
+        var __translator = new TranslatorDAO();
+        var __table = new Table(__translator);
+        
         window.onload = function() {
+            var result = document.getElementById("result").appendChild(__table.render);
             var fileInput = document.getElementById('fileInput');
             fileInput.addEventListener('change', function(e) {
             	allLangMap = []; //reset all lang
@@ -207,8 +72,8 @@
                     	var lang = detectLang(file.name);
                     	var content = reader.result;  
                         loadLang(lang, content);
-						parse2(lang, content);
-						printResult2();
+						__translator.parse(file,content);
+						__table.refresh();
                     }
                     reader.readAsText(file);
                 });
