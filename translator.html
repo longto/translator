@@ -6,49 +6,10 @@
 
     <script type="text/javascript" src="jszip.min.js"></script>
     <script type="text/javascript" src="polyfill.js"></script>
-	<script type="text/javascript" src="models.js"></script>
+	<script type="text/javascript" src="translator.js"></script>
 	<script type="text/javascript" src="table.js"></script>
+	<script type="text/javascript" src="tab_panel.js"></script>
     <script type="text/javascript">
-
-        function getTextArea(lang) {
-            var result;
-            document.getElementsByTagName('textarea').foreach(function(e) {
-                if (e.className.includes(lang))
-                    result = e;
-            });
-            return result;
-        }
-
-        function loadLang(lang, result) {
-            getTextArea(lang).innerHTML = result;
-        }
-
-        function getLang(lang) {
-            return getTextArea(lang).innerHTML;
-        }
-
-        supportLang = [ "en", "da", "fr", "sv", "nb", "nl" ];
-        function detectLang(fileName) {
-            var result = "en";
-            supportLang.foreach(function(lang) {
-                if (fileName.includes("_" + lang)) result = lang;
-            });
-            return result;
-        }
-
-       
-        function switchLang(e) {
-            toggleSelected(false);
-            selectedLang = e.className;
-            toggleSelected(true);
-        }
-
-        function toggleSelected(toggleOn) {
-            var objs = document.getElementsByClassName(selectedLang).foreach(function(obj) {
-                if (toggleOn) obj.addClass(selected);
-                else obj.removeClass(selected);
-            });
-        }
 
         function generateZip(e) {
             content = __translator.generateZip();
@@ -57,27 +18,28 @@
             e.setAttribute("href","data:application/zip;base64," + content);
         }
         
-        
-        var __translator = new TranslatorDAO();
+        var __translator = new Translator();
         var __table = new Table(__translator);
+        var __tabPanel = new TabPanel();
         
         window.onload = function() {
-            var result = document.getElementById("result").appendChild(__table.render);
-            var fileInput = document.getElementById('fileInput');
+            document.getElementById("preview").appendChild(__tabPanel.render);
+            var fileInput = document.getElementById('fileUpload');
             fileInput.addEventListener('change', function(e) {
-            	allLangMap = []; //reset all lang
+                __tabPanel.clear();
                 fileInput.files.foreach(function(file) {
                     var reader = new FileReader();
                     reader.onload = function(e) {
-                    	var lang = detectLang(file.name);
+                    	var lang = __translator.detectLang(file.name);
                     	var content = reader.result;  
-                        loadLang(lang, content);
+                        //loadLang(lang, content);
+                        __tabPanel.addTab(lang,content);
 						__translator.parse(file,content);
 						__table.refresh();
                     }
                     reader.readAsText(file);
                 });
-
+                __tabPanel.addTab("result",__table.render);
             });
         }
 
@@ -85,36 +47,11 @@
 </head>
 
 <body>
-    Select files :
-    <input type="file" id="fileInput" multiple/>
-    </br>
-
-    <div class="tab-panel">
-        <ul class="lang_select">
-            <li class="en selected" onclick="switchLang(this);">en</li>
-            <li class="da" onclick="switchLang(this);">da</li>
-            <li class="fr" onclick="switchLang(this);">fr</li>
-            <li class="nb" onclick="switchLang(this);">nb</li>
-            <li class="nl" onclick="switchLang(this);">nl</li>
-            <li class="sv" onclick="switchLang(this);">sv</li>
-        </ul>
-        <div class="clear"></div>
-        <div class="lang_load">
-            <textarea class="en selected">en</textarea>
-            <textarea class="da">da</textarea>
-            <textarea class="fr">fr</textarea>
-            <textarea class="nb">nb</textarea>
-            <textarea class="nl">nl</textarea>
-            <textarea class="sv">sv</textarea>
-        </div>
-        <div class="clear"></div>
-    </div>
-    <input type="button" value="parse" onclick="parseAll();" />
     
-    <a onclick="generateZip(this);"> download </a>
-    <div id="fileName"></div>
-    <div id="result">
-    </div>
+    <label class="button" for="fileUpload"> Upload fileS</label>
+    <input type="file" id="fileUpload" multiple="multiple" style="visibility: hidden"/>
+	<div id="preview"></div>
+    <a onclick="generateZip(this);" class="button"> download </a>
 </body>
 
 </html>

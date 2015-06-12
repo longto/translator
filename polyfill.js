@@ -21,14 +21,23 @@ if (!String.prototype.includes) {
 if (!HTMLElement.prototype.addClass) {
 	HTMLElement.prototype.addClass = function(className) {
 		if (!this.className.includes(className)) {
-			this.className = this.className + className;
+			this.className = this.className + " " + className;
 		}
 	}
 }
 if (!HTMLElement.prototype.removeClass) {
 	HTMLElement.prototype.removeClass = function(className) {
 		if (this.className.includes(className)) {
-			this.className = this.className.replace(className, "");
+			this.className = this.className.replace(className, "").trim();
+		}
+	}
+}
+if (!HTMLElement.prototype.toggleClass) {
+	HTMLElement.prototype.toggleClass = function(className,on) {
+		if (on) {
+			this.addClass(className);
+		} else {
+			this.removeClass(className);
 		}
 	}
 }

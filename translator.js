@@ -1,12 +1,12 @@
-function TranslatorDAO() {
+function Translator() {
 	this.supportLang = [ "en", "da", "fr", "sv", "nb", "nl" ];
 	this.supportExt = "properties";
 	this.allLangMap = [];
 }
 
-TranslatorDAO.prototype = {
-	constructor : TranslatorDAO,
-	
+Translator.prototype = {
+	constructor : Translator,
+
 	indexOf : function(key) {
 		result = -1;
 		this.allLangMap.foreach(function(m, i) {
@@ -15,7 +15,7 @@ TranslatorDAO.prototype = {
 		});
 		return result;
 	},
-	
+
 	push : function(key, value, lang) {
 		var index = this.indexOf(key);
 		if (index >= 0) {
@@ -50,26 +50,26 @@ TranslatorDAO.prototype = {
 		});
 	},
 
-    getLangResult : function (lang) {
-        var result = "";
-        this.allLangMap.foreach(function(m) {
-            if (!isUndef(m[lang])) {
-                result += m.key + "=" + m[lang] + "\n";
-            }
-        });
-        return result;
-    },
+	getLangResult : function(lang) {
+		var result = "";
+		this.allLangMap.foreach(function(m) {
+			if (!isUndef(m[lang])) {
+				result += m.key + "=" + m[lang] + "\n";
+			}
+		});
+		return result;
+	},
 
-    generateZip : function () {
-        var zip = new JSZip();
-        var folder = zip.folder("I18N");
-        var self = this;
-        supportLang.foreach(function(lang) {
-            var result = "" + self.getLangResult(lang);
-            folder.file(lang + ".properties", result);
-        });
-        return zip.generate();
-    },
+	generateZip : function() {
+		var zip = new JSZip();
+		var folder = zip.folder("I18N");
+		var self = this;
+		this.supportLang.foreach(function(lang) {
+			var result = "" + self.getLangResult(lang);
+			folder.file(lang + ".properties", result);
+		});
+		return zip.generate();
+	},
 
 	properties : function() {
 		var prop = [ "key" ];
@@ -78,16 +78,16 @@ TranslatorDAO.prototype = {
 		});
 		return prop;
 	},
-	
-	data: function () {
+
+	data : function() {
 		return this.allLangMap;
 	},
-	
+
 	clear : function() {
 		this.allLangMap.clear();
 	},
-	
-	getSupportLang :function(){
+
+	getSupportLang : function() {
 		return this.supportLang;
 	}
 

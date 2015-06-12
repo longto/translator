@@ -48,7 +48,6 @@ Table.prototype = {
 
 	refresh : function() {
 		this.render.clearChildren();
-		//this.render = createTag("table");
 		this.makeHeader();
 		this.makeContent();
 		return this.render;
@@ -62,7 +61,7 @@ Table.prototype = {
 		return miss;
 	},
 
-	render : function(){
+	render : function() {
 		return this.render;
 	}
 }
