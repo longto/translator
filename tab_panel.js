@@ -11,11 +11,6 @@ function TabPanel() {
 	this.currentTab = null;
 }
 
-function handle(e) {
-	var tab = e.target;
-	tab.tabPanel.tabSelect(tab);
-}
-
 TabPanel.prototype = {
 	constructor : TabPanel,
 	
