@@ -29,8 +29,11 @@ TabPanel.prototype = {
 
 	addHeader : function(head) {
 		var newHead = createTag("div",head,"tab-header-ele");
-		newHead.tabPanel = this;
-		newHead.addEventListener("click", handle);
+		var self = this;
+		newHead.tabSelectCallback = function(){
+			self.tabSelect(this);
+		}; 
+		newHead.addEventListener("click", this.tabSelectHandle);
 		this.tabHeader.appendChild(newHead);
 		return newHead;
 	},
@@ -50,6 +53,10 @@ TabPanel.prototype = {
 		this.tabHeader.clearChildren();
 		this.tabBody.clearChildren();
 		this.tabMap.clear();
+	},
+
+	tabSelectHandle : function(e) {
+		e.target.tabSelectCallback();
 	},
 
 	tabSelect : function(tab){
